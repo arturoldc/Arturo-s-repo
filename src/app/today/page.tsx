@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useStore } from "@/lib/store";
 import { Item } from "@/lib/types";
 import { sortPriorities, todaysPriorities } from "@/lib/priorities";
@@ -12,11 +13,24 @@ import { DetailDrawer } from "@/components/DetailDrawer";
 import { TodayEditSheet } from "@/components/morning/TodayEditSheet";
 
 export default function TodayPage() {
-  const { items, hydrated, toggleDone, reorderPriorities, removePriorityToday } =
-    useStore();
+  const {
+    items,
+    hydrated,
+    toggleDone,
+    reorderPriorities,
+    removePriorityToday,
+    resetDemo,
+  } = useStore();
+  const router = useRouter();
   const [selected, setSelected] = useState<Item | null>(null);
   const [editing, setEditing] = useState(false);
   const today = todayKey();
+
+  // Demo/testing: re-arm a fresh "new day" and run the whole ritual from step 1.
+  function replayRitual() {
+    resetDemo();
+    router.push("/morning");
+  }
 
   const all = useMemo(
     () => sortPriorities(todaysPriorities(items, today)),
@@ -93,6 +107,17 @@ export default function TodayPage() {
             onOpen={setSelected}
           />
         </>
+      )}
+
+      {hydrated && (
+        <div className="mt-10 border-t border-zinc-200/70 pt-4 text-center">
+          <button
+            onClick={replayRitual}
+            className="text-xs font-medium text-zinc-400 underline underline-offset-2"
+          >
+            ↻ Replay morning ritual (fresh demo)
+          </button>
+        </div>
       )}
 
       <DetailDrawer
