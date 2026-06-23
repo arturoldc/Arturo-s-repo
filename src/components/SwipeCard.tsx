@@ -37,8 +37,11 @@ const SWIPE = 110; // px threshold
 
 export const SwipeCard = forwardRef<
   SwipeCardHandle,
-  { item: Item; onDecision: (d: Decision) => void; config?: SwipeConfig }
->(function SwipeCard({ item, onDecision, config = DEFAULT_CONFIG }, ref) {
+  { item: Item; onDecision: (d: Decision) => void; config?: SwipeConfig; allowUp?: boolean }
+>(function SwipeCard(
+  { item, onDecision, config = DEFAULT_CONFIG, allowUp = true },
+  ref,
+) {
   const x = useMotionValue(0);
   const y = useMotionValue(0);
   const rotate = useTransform(x, [-220, 220], [-16, 16]);
@@ -71,7 +74,7 @@ export const SwipeCard = forwardRef<
       dragElastic={0.7}
       onDragEnd={(_, info) => {
         const { offset, velocity } = info;
-        if (offset.y < -SWIPE || velocity.y < -800) flyOut("super");
+        if (allowUp && (offset.y < -SWIPE || velocity.y < -800)) flyOut("super");
         else if (offset.x > SWIPE || velocity.x > 800) flyOut("keep");
         else if (offset.x < -SWIPE || velocity.x < -800) flyOut("discard");
         else {
@@ -113,12 +116,14 @@ export const SwipeCard = forwardRef<
       >
         {config.left.label}
       </motion.div>
-      <motion.div
-        style={{ opacity: superOpacity }}
-        className={`pointer-events-none absolute inset-x-0 bottom-24 mx-auto w-fit rounded-xl border-4 px-3 py-1 text-2xl font-black uppercase ${config.up.className}`}
-      >
-        {config.up.label}
-      </motion.div>
+      {allowUp && (
+        <motion.div
+          style={{ opacity: superOpacity }}
+          className={`pointer-events-none absolute inset-x-0 bottom-24 mx-auto w-fit rounded-xl border-4 px-3 py-1 text-2xl font-black uppercase ${config.up.className}`}
+        >
+          {config.up.label}
+        </motion.div>
+      )}
     </motion.div>
   );
 });

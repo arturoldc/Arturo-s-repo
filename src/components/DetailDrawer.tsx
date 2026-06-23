@@ -8,10 +8,13 @@ export function DetailDrawer({
   item,
   onClose,
   onToggleDone,
+  onRemoveFromToday,
 }: {
   item: Item | null;
   onClose: () => void;
   onToggleDone: (id: string) => void;
+  /** When provided (Today tab), shows a "Remove from today" action. */
+  onRemoveFromToday?: (id: string) => void;
 }) {
   if (!item) return null;
   const done = item.status === "done";
@@ -56,6 +59,18 @@ export function DetailDrawer({
             {done ? "Mark not done" : "Mark done"}
           </button>
         </div>
+
+        {onRemoveFromToday && (
+          <button
+            onClick={() => {
+              onRemoveFromToday(item.id);
+              onClose();
+            }}
+            className="mt-2 w-full rounded-xl py-2.5 text-sm font-semibold text-zinc-500"
+          >
+            Remove from today
+          </button>
+        )}
       </div>
     </div>
   );

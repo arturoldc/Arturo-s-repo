@@ -7,18 +7,23 @@ import { Item } from "@/lib/types";
 import { sortPriorities, todaysPriorities } from "@/lib/priorities";
 import { todayKey } from "@/lib/day";
 import { ReorderableList } from "@/components/ReorderableList";
+import { CollapsibleDone } from "@/components/CollapsibleDone";
 import { DetailDrawer } from "@/components/DetailDrawer";
+import { TodayEditSheet } from "@/components/morning/TodayEditSheet";
 
 export default function TodayPage() {
-  const { items, hydrated, toggleDone, reorderPriorities } = useStore();
+  const { items, hydrated, toggleDone, reorderPriorities, removePriorityToday } =
+    useStore();
   const [selected, setSelected] = useState<Item | null>(null);
+  const [editing, setEditing] = useState(false);
   const today = todayKey();
 
-  const list = useMemo(
+  const all = useMemo(
     () => sortPriorities(todaysPriorities(items, today)),
     [items, today],
   );
-  const doneCount = list.filter((i) => i.status === "done").length;
+  const active = all.filter((i) => i.status !== "done");
+  const done = all.filter((i) => i.status === "done");
 
   const dateLabel = new Date().toLocaleDateString(undefined, {
     weekday: "long",
@@ -28,29 +33,36 @@ export default function TodayPage() {
 
   return (
     <div className="px-5 pt-6">
-      <header className="mb-4">
-        <h1 className="text-2xl font-bold tracking-tight">Today ⭐</h1>
-        <p className="text-sm text-zinc-500">
-          {dateLabel}
-          {hydrated && list.length > 0 && (
-            <>
-              {" · "}
-              {doneCount} of {list.length} done
-            </>
-          )}
-        </p>
+      <header className="mb-4 flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Today ⭐</h1>
+          <p className="text-sm text-zinc-500">
+            {dateLabel}
+            {hydrated && all.length > 0 && (
+              <>
+                {" · "}
+                {done.length} of {all.length} done
+              </>
+            )}
+          </p>
+        </div>
+        {hydrated && all.length > 0 && (
+          <button
+            onClick={() => setEditing(true)}
+            className="rounded-full bg-white px-3.5 py-1.5 text-sm font-semibold text-zinc-600 ring-1 ring-zinc-200 active:scale-95"
+          >
+            Edit
+          </button>
+        )}
       </header>
 
       {!hydrated ? (
         <div className="space-y-2.5">
           {[0, 1, 2].map((i) => (
-            <div
-              key={i}
-              className="h-24 animate-pulse rounded-2xl bg-zinc-200"
-            />
+            <div key={i} className="h-24 animate-pulse rounded-2xl bg-zinc-200" />
           ))}
         </div>
-      ) : list.length === 0 ? (
+      ) : all.length === 0 ? (
         <div className="mt-16 flex flex-col items-center text-center text-zinc-400">
           <div className="text-4xl">🌤️</div>
           <p className="mt-3 text-sm">No priorities set for today.</p>
@@ -62,19 +74,34 @@ export default function TodayPage() {
           </Link>
         </div>
       ) : (
-        <ReorderableList
-          items={list}
-          onReorder={reorderPriorities}
-          onToggleDone={toggleDone}
-          onOpen={setSelected}
-        />
+        <>
+          {active.length > 0 ? (
+            <ReorderableList
+              items={active}
+              onReorder={reorderPriorities}
+              onToggleDone={toggleDone}
+              onOpen={setSelected}
+            />
+          ) : (
+            <div className="rounded-2xl border border-dashed border-zinc-300 p-6 text-center text-sm text-zinc-400">
+              All done for today. 🎉
+            </div>
+          )}
+          <CollapsibleDone
+            items={done}
+            onToggleDone={toggleDone}
+            onOpen={setSelected}
+          />
+        </>
       )}
 
       <DetailDrawer
         item={selected}
         onClose={() => setSelected(null)}
         onToggleDone={toggleDone}
+        onRemoveFromToday={removePriorityToday}
       />
+      {editing && <TodayEditSheet onClose={() => setEditing(false)} />}
     </div>
   );
 }

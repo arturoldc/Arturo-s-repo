@@ -26,6 +26,7 @@ export function DeckShell({
   item,
   next,
   config,
+  allowUp = true,
   onDecision,
   buttons,
   hint,
@@ -34,6 +35,8 @@ export function DeckShell({
   next?: Item;
   /** Stamp labels/colors; omit to use SwipeCard's default Keep/Nope/Super. */
   config?: SwipeConfig;
+  /** Whether the up (super) gesture is enabled. */
+  allowUp?: boolean;
   onDecision: (d: Decision) => void;
   buttons: DeckButton[];
   hint: string;
@@ -55,6 +58,7 @@ export function DeckShell({
           ref={topRef}
           item={item}
           config={config}
+          allowUp={allowUp}
           onDecision={onDecision}
         />
       </div>

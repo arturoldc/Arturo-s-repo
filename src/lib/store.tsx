@@ -44,7 +44,6 @@ interface Store {
   // Daily "Today's priorities" ritual
   setPriorityToday: (id: string) => void;
   removePriorityToday: (id: string) => void;
-  carryForward: (id: string) => void;
   completePriority: (id: string) => void;
   reorderPriorities: (orderedIds: string[]) => void;
   markRitualComplete: () => void;
@@ -180,13 +179,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     [patch],
   );
 
-  // Review deck LEFT = keep/carry: clear the stale slot so it won't linger in
-  // tomorrow's "yesterday" deck. Status stays "kept".
-  const carryForward = useCallback(
-    (id: string) => patch(id, { priorityDate: null }),
-    [patch],
-  );
-
   // Review deck RIGHT = done. (toggleDone stays the generic toggle elsewhere.)
   const completePriority = useCallback(
     (id: string) => patch(id, { status: "done" }),
@@ -223,7 +215,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         resetDemo,
         setPriorityToday,
         removePriorityToday,
-        carryForward,
         completePriority,
         reorderPriorities,
         markRitualComplete,

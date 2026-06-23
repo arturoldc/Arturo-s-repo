@@ -20,10 +20,13 @@ export function ItemCard({
   item,
   onToggleDone,
   onOpen,
+  subdued = false,
 }: {
   item: Item;
   onToggleDone: () => void;
   onOpen: () => void;
+  /** Done-section styling: greyed, neutral border, no strikethrough. */
+  subdued?: boolean;
 }) {
   const ds = dueState(item);
   const due = dueLabel(item);
@@ -31,8 +34,8 @@ export function ItemCard({
 
   return (
     <div
-      className={`relative rounded-2xl border border-l-4 border-zinc-200 bg-white shadow-sm ${DUE_BORDER[ds]} ${
-        done ? "opacity-60" : ""
+      className={`relative rounded-2xl border border-l-4 border-zinc-200 bg-white shadow-sm ${
+        subdued ? DUE_BORDER.none + " opacity-60" : DUE_BORDER[ds]
       }`}
     >
       <button
@@ -50,7 +53,7 @@ export function ItemCard({
 
         <h3
           className={`text-[15px] font-semibold leading-snug text-zinc-900 ${
-            done ? "line-through" : ""
+            done && !subdued ? "line-through" : ""
           }`}
         >
           {item.title}

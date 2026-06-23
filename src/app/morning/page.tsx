@@ -12,7 +12,7 @@ const STEPS: { key: Step; title: string; subtitle: string }[] = [
   {
     key: "review",
     title: "Yesterday's priorities",
-    subtitle: "← keep · → done · ↑ still today",
+    subtitle: "← still pending · → done",
   },
   {
     key: "inbox",
