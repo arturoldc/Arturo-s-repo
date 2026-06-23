@@ -10,8 +10,10 @@ import {
 } from "react";
 import { Item, ItemType } from "./types";
 import { SAMPLE_ITEMS } from "./sampleData";
+import { todayKey } from "./day";
 
 const STORAGE_KEY = "commitments-v1";
+const DAY_KEY = "commitments-day-v1";
 
 interface NewItem {
   type: ItemType;
@@ -20,9 +22,18 @@ interface NewItem {
   due?: string;
 }
 
+interface DayState {
+  lastVisitDate: string | null;
+  ritualDoneFor: string | null;
+}
+
+const INITIAL_DAY: DayState = { lastVisitDate: null, ritualDoneFor: null };
+
 interface Store {
   items: Item[];
   hydrated: boolean;
+  /** True once a new day has begun and the morning ritual hasn't been completed yet. */
+  ritualDue: boolean;
   keep: (id: string) => void;
   discard: (id: string) => void;
   superLike: (id: string) => void;
@@ -30,12 +41,20 @@ interface Store {
   reorder: (orderedIds: string[]) => void;
   addItem: (item: NewItem) => void;
   resetDemo: () => void;
+  // Daily "Today's priorities" ritual
+  setPriorityToday: (id: string) => void;
+  removePriorityToday: (id: string) => void;
+  carryForward: (id: string) => void;
+  completePriority: (id: string) => void;
+  reorderPriorities: (orderedIds: string[]) => void;
+  markRitualComplete: () => void;
 }
 
 const StoreContext = createContext<Store | null>(null);
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<Item[]>(SAMPLE_ITEMS);
+  const [dayState, setDayState] = useState<DayState>(INITIAL_DAY);
   const [hydrated, setHydrated] = useState(false);
   const didHydrate = useRef(false);
 
@@ -49,10 +68,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     } catch {
       /* ignore corrupt storage */
     }
+    try {
+      const rawDay = localStorage.getItem(DAY_KEY);
+      if (rawDay) setDayState({ ...INITIAL_DAY, ...JSON.parse(rawDay) });
+    } catch {
+      /* ignore corrupt storage */
+    }
     setHydrated(true);
   }, []);
 
-  // Persist on every change (after hydration).
+  // Persist items on every change (after hydration).
   useEffect(() => {
     if (!hydrated) return;
     try {
@@ -61,6 +86,20 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       /* storage full / unavailable */
     }
   }, [items, hydrated]);
+
+  // Persist day-state separately so the item payload schema is untouched.
+  useEffect(() => {
+    if (!hydrated) return;
+    try {
+      localStorage.setItem(DAY_KEY, JSON.stringify(dayState));
+    } catch {
+      /* storage full / unavailable */
+    }
+  }, [dayState, hydrated]);
+
+  // Ritual is due whenever it hasn't been completed for today yet.
+  // (lastVisitDate is stamped in markRitualComplete; it isn't used for gating.)
+  const ritualDue = hydrated && dayState.ritualDoneFor !== todayKey();
 
   const patch = useCallback((id: string, changes: Partial<Item>) => {
     setItems((prev) =>
@@ -123,13 +162,58 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setItems((prev) => [...prev, newItem]);
   }, []);
 
-  const resetDemo = useCallback(() => setItems(SAMPLE_ITEMS), []);
+  const resetDemo = useCallback(() => {
+    setItems(SAMPLE_ITEMS);
+    setDayState(INITIAL_DAY); // re-arm the ritual after a reset
+  }, []);
+
+  // --- Today's priorities ritual ---
+
+  // "⭐ Do today": slot the item for today's focus (separate from pinned/super-like).
+  const setPriorityToday = useCallback(
+    (id: string) => patch(id, { priorityDate: todayKey() }),
+    [patch],
+  );
+
+  const removePriorityToday = useCallback(
+    (id: string) => patch(id, { priorityDate: null }),
+    [patch],
+  );
+
+  // Review deck LEFT = keep/carry: clear the stale slot so it won't linger in
+  // tomorrow's "yesterday" deck. Status stays "kept".
+  const carryForward = useCallback(
+    (id: string) => patch(id, { priorityDate: null }),
+    [patch],
+  );
+
+  // Review deck RIGHT = done. (toggleDone stays the generic toggle elsewhere.)
+  const completePriority = useCallback(
+    (id: string) => patch(id, { status: "done" }),
+    [patch],
+  );
+
+  // Reassign manual order within the Today list.
+  const reorderPriorities = useCallback((orderedIds: string[]) => {
+    const rank = new Map(orderedIds.map((id, i) => [id, i]));
+    setItems((prev) =>
+      prev.map((it) =>
+        rank.has(it.id) ? { ...it, priorityRank: rank.get(it.id)! } : it,
+      ),
+    );
+  }, []);
+
+  const markRitualComplete = useCallback(() => {
+    const t = todayKey();
+    setDayState((s) => ({ ...s, ritualDoneFor: t, lastVisitDate: t }));
+  }, []);
 
   return (
     <StoreContext.Provider
       value={{
         items,
         hydrated,
+        ritualDue,
         keep,
         discard,
         superLike,
@@ -137,6 +221,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         reorder,
         addItem,
         resetDemo,
+        setPriorityToday,
+        removePriorityToday,
+        carryForward,
+        completePriority,
+        reorderPriorities,
+        markRitualComplete,
       }}
     >
       {children}

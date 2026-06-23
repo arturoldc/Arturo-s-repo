@@ -6,7 +6,28 @@ import { Item, TYPE_META } from "@/lib/types";
 import { dueLabel } from "@/lib/ordering";
 import { TypeBadge } from "./TypeBadge";
 
+// "keep" = right, "discard" = left, "super" = up. These are the GEOMETRIC
+// gestures; call sites map them to their own semantics. The visible stamps are
+// configurable per-deck via `config`.
 export type Decision = "keep" | "discard" | "super";
+
+export interface SwipeStamp {
+  label: string;
+  /** Border + text color utilities, e.g. "border-emerald-500 text-emerald-500". */
+  className: string;
+}
+export interface SwipeConfig {
+  right: SwipeStamp;
+  left: SwipeStamp;
+  up: SwipeStamp;
+}
+
+// Literal class strings so Tailwind's JIT can see them (like TYPE_META).
+const DEFAULT_CONFIG: SwipeConfig = {
+  right: { label: "Keep", className: "border-emerald-500 text-emerald-500" },
+  left: { label: "Nope", className: "border-rose-500 text-rose-500" },
+  up: { label: "★ Super", className: "border-amber-400 text-amber-500" },
+};
 
 export interface SwipeCardHandle {
   swipe: (d: Decision) => void;
@@ -16,8 +37,8 @@ const SWIPE = 110; // px threshold
 
 export const SwipeCard = forwardRef<
   SwipeCardHandle,
-  { item: Item; onDecision: (d: Decision) => void }
->(function SwipeCard({ item, onDecision }, ref) {
+  { item: Item; onDecision: (d: Decision) => void; config?: SwipeConfig }
+>(function SwipeCard({ item, onDecision, config = DEFAULT_CONFIG }, ref) {
   const x = useMotionValue(0);
   const y = useMotionValue(0);
   const rotate = useTransform(x, [-220, 220], [-16, 16]);
@@ -82,21 +103,21 @@ export const SwipeCard = forwardRef<
       {/* decision stamps */}
       <motion.div
         style={{ opacity: keepOpacity }}
-        className="pointer-events-none absolute left-5 top-20 -rotate-12 rounded-xl border-4 border-emerald-500 px-3 py-1 text-2xl font-black uppercase text-emerald-500"
+        className={`pointer-events-none absolute left-5 top-20 -rotate-12 rounded-xl border-4 px-3 py-1 text-2xl font-black uppercase ${config.right.className}`}
       >
-        Keep
+        {config.right.label}
       </motion.div>
       <motion.div
         style={{ opacity: nopeOpacity }}
-        className="pointer-events-none absolute right-5 top-20 rotate-12 rounded-xl border-4 border-rose-500 px-3 py-1 text-2xl font-black uppercase text-rose-500"
+        className={`pointer-events-none absolute right-5 top-20 rotate-12 rounded-xl border-4 px-3 py-1 text-2xl font-black uppercase ${config.left.className}`}
       >
-        Nope
+        {config.left.label}
       </motion.div>
       <motion.div
         style={{ opacity: superOpacity }}
-        className="pointer-events-none absolute inset-x-0 bottom-24 mx-auto w-fit rounded-xl border-4 border-amber-400 px-3 py-1 text-2xl font-black uppercase text-amber-500"
+        className={`pointer-events-none absolute inset-x-0 bottom-24 mx-auto w-fit rounded-xl border-4 px-3 py-1 text-2xl font-black uppercase ${config.up.className}`}
       >
-        ★ Super
+        {config.up.label}
       </motion.div>
     </motion.div>
   );

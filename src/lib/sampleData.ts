@@ -1,4 +1,5 @@
 import { Item } from "./types";
+import { addDays, todayKey } from "./day";
 
 // Relative-date helpers so the prototype always looks "live".
 const createdAgo = (days: number) =>
@@ -10,6 +11,10 @@ const dueIn = (days: number) => {
   d.setDate(d.getDate() + days);
   return d.toISOString().slice(0, 10);
 };
+
+// A local yyyy-mm-dd `daysAgo` days before today, matching todayKey()'s format,
+// so seeded "yesterday's priorities" line up with the day logic.
+const priorityKey = (daysAgo: number) => addDays(todayKey(), -daysAgo);
 
 let n = 0;
 const id = () => `sample-${++n}`;
@@ -117,6 +122,7 @@ export const SAMPLE_ITEMS: Item[] = [
     pinned: false,
     sortRank: null,
     createdAt: createdAgo(12),
+    priorityDate: priorityKey(1), // yesterday's priority -> review deck
   },
   {
     id: id(),
@@ -127,6 +133,7 @@ export const SAMPLE_ITEMS: Item[] = [
     pinned: false,
     sortRank: null,
     createdAt: createdAgo(8),
+    priorityDate: priorityKey(2), // an older priority day (multi-day-gap data)
   },
   {
     id: id(),
@@ -138,6 +145,7 @@ export const SAMPLE_ITEMS: Item[] = [
     pinned: false,
     sortRank: null,
     createdAt: createdAgo(5),
+    priorityDate: priorityKey(1), // yesterday's priority -> review deck
   },
   {
     id: id(),

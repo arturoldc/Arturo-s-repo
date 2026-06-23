@@ -3,6 +3,7 @@ import { Geist } from "next/font/google";
 import "./globals.css";
 import { StoreProvider } from "@/lib/store";
 import { BottomNav } from "@/components/BottomNav";
+import { RitualGate } from "@/components/RitualGate";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,6 +31,7 @@ export default function RootLayout({
     <html lang="en" className={`${geistSans.variable} h-full antialiased`}>
       <body className="min-h-full">
         <StoreProvider>
+          <RitualGate />
           <div className="mx-auto flex min-h-dvh max-w-md flex-col">
             <main className="flex-1 pb-20">{children}</main>
             <BottomNav />

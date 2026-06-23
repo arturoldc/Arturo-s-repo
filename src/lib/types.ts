@@ -25,6 +25,10 @@ export interface Item {
   sortRank: number | null;
   /** ISO timestamp. */
   createdAt: string;
+  /** yyyy-mm-dd this item is slotted as a "do today" priority. null/absent => not a priority. Ephemeral, resets daily. */
+  priorityDate?: string | null;
+  /** Manual order within the Today list, ascending. null => fall back to compareItems. */
+  priorityRank?: number | null;
 }
 
 interface TypeMeta {

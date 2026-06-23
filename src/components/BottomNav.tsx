@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useStore } from "@/lib/store";
+import { todaysPriorities } from "@/lib/priorities";
+import { todayKey } from "@/lib/day";
 
 export function BottomNav() {
   const pathname = usePathname();
@@ -10,8 +12,13 @@ export function BottomNav() {
   const pending = hydrated
     ? items.filter((i) => i.status === "pending").length
     : 0;
+  const todayCount = hydrated
+    ? todaysPriorities(items, todayKey()).filter((i) => i.status !== "done")
+        .length
+    : 0;
 
   const tabs = [
+    { href: "/today", label: "Today", icon: "⭐", badge: todayCount },
     { href: "/inbox", label: "Inbox", icon: "🗂️", badge: pending },
     { href: "/", label: "Dashboard", icon: "📊", badge: 0 },
   ];
