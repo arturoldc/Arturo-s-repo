@@ -29,6 +29,11 @@ export interface Item {
   priorityDate?: string | null;
   /** Manual order within the Today list, ascending. null => fall back to compareItems. */
   priorityRank?: number | null;
+  /**
+   * Stable id from an external connector (e.g. `slack:<channel>:<ts>`), used to
+   * dedup on re-sync. Absent for manual/sample items.
+   */
+  externalId?: string;
 }
 
 interface TypeMeta {

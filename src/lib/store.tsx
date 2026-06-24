@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import { Item, ItemType } from "./types";
+import { IngestedItem } from "./connectors/types";
 import { SAMPLE_ITEMS } from "./sampleData";
 import { todayKey } from "./day";
 
@@ -40,6 +41,8 @@ interface Store {
   toggleDone: (id: string) => void;
   reorder: (orderedIds: string[]) => void;
   addItem: (item: NewItem) => void;
+  /** Fold connector results into the inbox as pending items; returns count added. */
+  ingestItems: (incoming: IngestedItem[]) => number;
   resetDemo: () => void;
   // Daily "Today's priorities" ritual
   setPriorityToday: (id: string) => void;
@@ -161,6 +164,46 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setItems((prev) => [...prev, newItem]);
   }, []);
 
+  // Fold connector output into the inbox. Dedup by externalId so re-syncing the
+  // same Slack channel never creates duplicates. Returns how many were added.
+  const ingestItems = useCallback(
+    (incoming: IngestedItem[]): number => {
+      const existing = new Set(
+        items.map((it) => it.externalId).filter(Boolean) as string[],
+      );
+      const fresh: Item[] = [];
+      for (const inc of incoming) {
+        if (existing.has(inc.externalId)) continue;
+        existing.add(inc.externalId); // also dedup within this batch
+        fresh.push({
+          id: `ext-${inc.externalId}`,
+          type: inc.type,
+          title: inc.title,
+          source: inc.source,
+          person: inc.person,
+          due: inc.due,
+          status: "pending",
+          pinned: false,
+          sortRank: null,
+          createdAt: new Date().toISOString(),
+          externalId: inc.externalId,
+        });
+      }
+      if (fresh.length) {
+        // Guard again against prev inside the updater in case of a racing sync.
+        setItems((prev) => {
+          const have = new Set(
+            prev.map((it) => it.externalId).filter(Boolean) as string[],
+          );
+          const toAdd = fresh.filter((f) => !have.has(f.externalId!));
+          return toAdd.length ? [...prev, ...toAdd] : prev;
+        });
+      }
+      return fresh.length;
+    },
+    [items],
+  );
+
   const resetDemo = useCallback(() => {
     setItems(SAMPLE_ITEMS);
     setDayState(INITIAL_DAY); // re-arm the ritual after a reset
@@ -212,6 +255,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         toggleDone,
         reorder,
         addItem,
+        ingestItems,
         resetDemo,
         setPriorityToday,
         removePriorityToday,

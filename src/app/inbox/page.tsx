@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useStore } from "@/lib/store";
 import { TYPE_META } from "@/lib/types";
 import {
@@ -11,8 +11,11 @@ import {
 } from "@/components/SwipeCard";
 
 export default function InboxPage() {
-  const { items, hydrated, keep, discard, superLike, resetDemo } = useStore();
+  const { items, hydrated, keep, discard, superLike, resetDemo, ingestItems } =
+    useStore();
   const topRef = useRef<SwipeCardHandle>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [syncMsg, setSyncMsg] = useState<string | null>(null);
 
   const pending = items.filter((i) => i.status === "pending");
   const current = pending[0];
@@ -25,16 +28,58 @@ export default function InboxPage() {
     else superLike(current.id);
   }
 
+  async function syncFromSlack() {
+    if (syncing) return;
+    setSyncing(true);
+    setSyncMsg(null);
+    try {
+      const res = await fetch("/api/sync");
+      const data = await res.json();
+      if (!data.connected) {
+        setSyncMsg("Slack not connected — add SLACK_BOT_TOKEN to enable.");
+      } else if (data.error) {
+        setSyncMsg(`Couldn't reach Slack: ${data.error}`);
+      } else {
+        const added = ingestItems(data.items ?? []);
+        setSyncMsg(
+          added > 0
+            ? `Added ${added} new item${added === 1 ? "" : "s"} from Slack.`
+            : "No new messages.",
+        );
+      }
+    } catch {
+      setSyncMsg("Sync failed — check your connection.");
+    } finally {
+      setSyncing(false);
+    }
+  }
+
   return (
     <div className="flex flex-col px-5 pt-6">
-      <header className="mb-4">
-        <h1 className="text-2xl font-bold tracking-tight">Good morning ☀️</h1>
-        <p className="text-sm text-zinc-500">
-          {hydrated && pending.length > 0
-            ? `${pending.length} thing${pending.length === 1 ? "" : "s"} from yesterday — keep or toss.`
-            : "Pulled from your Granola notes."}
-        </p>
+      <header className="mb-4 flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Good morning ☀️</h1>
+          <p className="text-sm text-zinc-500">
+            {hydrated && pending.length > 0
+              ? `${pending.length} thing${pending.length === 1 ? "" : "s"} from yesterday — keep or toss.`
+              : "Pulled from your Granola notes."}
+          </p>
+        </div>
+        <button
+          onClick={syncFromSlack}
+          disabled={syncing}
+          className="mt-1 flex shrink-0 items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-zinc-600 ring-1 ring-zinc-200 transition-colors active:scale-95 disabled:opacity-50"
+        >
+          <span className={syncing ? "inline-block animate-spin" : ""}>⟳</span>
+          {syncing ? "Syncing…" : "Sync from Slack"}
+        </button>
       </header>
+
+      {syncMsg && (
+        <p className="mb-3 rounded-xl bg-zinc-100 px-3 py-2 text-xs text-zinc-600">
+          {syncMsg}
+        </p>
+      )}
 
       <div className="relative mx-auto h-[460px] w-full max-w-sm">
         {!hydrated ? (
