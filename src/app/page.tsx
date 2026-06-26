@@ -13,7 +13,8 @@ import { AddItemDialog } from "@/components/AddItemDialog";
 type Tab = "all" | ItemType;
 
 export default function DashboardPage() {
-  const { items, hydrated, reorder, toggleDone, addItem } = useStore();
+  const { items, hydrated, reorder, toggleDone, addItem, updateItem } =
+    useStore();
   const [tab, setTab] = useState<Tab>("all");
   const [selected, setSelected] = useState<Item | null>(null);
   const [adding, setAdding] = useState(false);
@@ -251,6 +252,7 @@ export default function DashboardPage() {
         item={selected}
         onClose={() => setSelected(null)}
         onToggleDone={toggleDone}
+        onUpdate={updateItem}
       />
       <AddItemDialog open={adding} onClose={() => setAdding(false)} onAdd={addItem} />
     </div>

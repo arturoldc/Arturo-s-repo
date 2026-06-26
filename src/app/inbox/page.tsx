@@ -41,10 +41,13 @@ export default function InboxPage() {
         setSyncMsg(`Couldn't reach Slack: ${data.error}`);
       } else {
         const added = ingestItems(data.items ?? []);
+        const note = data.classified
+          ? ""
+          : " (AI sorting off — add ANTHROPIC_API_KEY)";
         setSyncMsg(
           added > 0
-            ? `Added ${added} new item${added === 1 ? "" : "s"} from Slack.`
-            : "No new messages.",
+            ? `Added ${added} new item${added === 1 ? "" : "s"} from Slack.${note}`
+            : `No new commitments found.${note}`,
         );
       }
     } catch {

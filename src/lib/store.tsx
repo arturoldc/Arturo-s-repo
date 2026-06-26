@@ -41,6 +41,8 @@ interface Store {
   toggleDone: (id: string) => void;
   reorder: (orderedIds: string[]) => void;
   addItem: (item: NewItem) => void;
+  /** Edit fields on an existing item (e.g. fix an AI-assigned type/person/due). */
+  updateItem: (id: string, changes: Partial<Item>) => void;
   /** Fold connector results into the inbox as pending items; returns count added. */
   ingestItems: (incoming: IngestedItem[]) => number;
   resetDemo: () => void;
@@ -164,6 +166,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setItems((prev) => [...prev, newItem]);
   }, []);
 
+  // Edit arbitrary fields on an item (the manual override for AI labels).
+  const updateItem = useCallback(
+    (id: string, changes: Partial<Item>) => patch(id, changes),
+    [patch],
+  );
+
   // Fold connector output into the inbox. Dedup by externalId so re-syncing the
   // same Slack channel never creates duplicates. Returns how many were added.
   const ingestItems = useCallback(
@@ -255,6 +263,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         toggleDone,
         reorder,
         addItem,
+        updateItem,
         ingestItems,
         resetDemo,
         setPriorityToday,

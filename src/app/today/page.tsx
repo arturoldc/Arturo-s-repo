@@ -19,6 +19,7 @@ export default function TodayPage() {
     toggleDone,
     reorderPriorities,
     removePriorityToday,
+    updateItem,
     resetDemo,
   } = useStore();
   const router = useRouter();
@@ -125,6 +126,7 @@ export default function TodayPage() {
         onClose={() => setSelected(null)}
         onToggleDone={toggleDone}
         onRemoveFromToday={removePriorityToday}
+        onUpdate={updateItem}
       />
       {editing && <TodayEditSheet onClose={() => setEditing(false)} />}
     </div>

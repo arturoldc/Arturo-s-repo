@@ -1,6 +1,7 @@
 "use client";
 
-import { Item } from "@/lib/types";
+import { useEffect, useState } from "react";
+import { Item, ItemType, TYPE_META, TYPE_ORDER } from "@/lib/types";
 import { ageInDays, dueLabel } from "@/lib/ordering";
 import { TypeBadge } from "./TypeBadge";
 
@@ -9,16 +10,29 @@ export function DetailDrawer({
   onClose,
   onToggleDone,
   onRemoveFromToday,
+  onUpdate,
 }: {
   item: Item | null;
   onClose: () => void;
   onToggleDone: (id: string) => void;
   /** When provided (Today tab), shows a "Remove from today" action. */
   onRemoveFromToday?: (id: string) => void;
+  /** When provided, the type/who/due become editable (fix AI labels). */
+  onUpdate?: (id: string, changes: Partial<Item>) => void;
 }) {
+  // Local edit state, seeded from the item so the UI reflects edits immediately
+  // (the parent passes a snapshot that doesn't change when the store does).
+  const [person, setPerson] = useState("");
+  const [due, setDue] = useState("");
+  useEffect(() => {
+    setPerson(item?.person ?? "");
+    setDue(item?.due ?? "");
+  }, [item?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   if (!item) return null;
   const done = item.status === "done";
-  const due = dueLabel(item);
+  const dueText = dueLabel(item);
+  const editable = Boolean(onUpdate);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center">
@@ -33,9 +47,50 @@ export function DetailDrawer({
 
         <h2 className="mt-4 text-xl font-bold leading-snug">{item.title}</h2>
 
+        {editable && (
+          <div className="mt-4 grid grid-cols-4 gap-2">
+            {TYPE_ORDER.map((t: ItemType) => (
+              <button
+                key={t}
+                onClick={() => onUpdate!(item.id, { type: t })}
+                className={`rounded-xl border px-2 py-2 text-xs font-semibold transition-colors ${
+                  item.type === t
+                    ? `${TYPE_META[t].badge} border-transparent`
+                    : "border-zinc-200 text-zinc-500"
+                }`}
+              >
+                {TYPE_META[t].label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {editable ? (
+          <div className="mt-3 flex gap-2">
+            <input
+              value={person}
+              onChange={(e) => setPerson(e.target.value)}
+              onBlur={() =>
+                onUpdate!(item.id, { person: person.trim() || undefined })
+              }
+              placeholder="Who? (optional)"
+              className="w-1/2 rounded-xl border border-zinc-200 px-3 py-2.5 text-sm outline-none focus:border-zinc-400"
+            />
+            <input
+              type="date"
+              value={due}
+              onChange={(e) => {
+                setDue(e.target.value);
+                onUpdate!(item.id, { due: e.target.value || undefined });
+              }}
+              className="w-1/2 rounded-xl border border-zinc-200 px-3 py-2.5 text-sm text-zinc-600 outline-none focus:border-zinc-400"
+            />
+          </div>
+        ) : null}
+
         <dl className="mt-4 space-y-2 text-sm">
-          {item.person && <Row label="Who">{item.person}</Row>}
-          {due && <Row label="Due">{due}</Row>}
+          {!editable && item.person && <Row label="Who">{item.person}</Row>}
+          {!editable && dueText && <Row label="Due">{dueText}</Row>}
           <Row label="Age">{ageInDays(item)} days</Row>
           <Row label="Source">{item.source}</Row>
         </dl>
