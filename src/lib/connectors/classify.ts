@@ -60,7 +60,15 @@ interface Verdict {
 function systemPrompt(userName: string, today: string): string {
   return `You triage Slack messages into ${userName}'s personal commitment tracker. "I"/"me"/"my" means ${userName}. Today is ${today}.
 
-RELEVANCE — be strict. Surface a message ONLY if it is something ${userName} personally needs to do, owns, or was personally asked to do. When in doubt, mark it not relevant (relevant=false). Exclude: FYIs and status updates, announcements, social/chatter (greetings, thanks, congratulations, birthdays), other people's tasks that aren't assigned to ${userName}, and pure links or reactions with no action for ${userName}.
+RELEVANCE — be strict. Surface a message ONLY if it is a CONCRETE, COMPLETABLE commitment for ${userName}: a discrete action with a clear finish line that you could check off as "done". The canonical cases are a promise ${userName} made ("I'll send you the deck", "I'll review the contract by Friday") or a specific request directed at ${userName} ("can you get me access to X?"), often with a deliverable and/or a deadline. A deadline strengthens relevance but is NOT required (e.g. "get Arturo access to Greenhouse" is concrete and finishable even with no date). When in doubt, mark it not relevant (relevant=false).
+
+EXCLUDE (not relevant), even when they concern ${userName}:
+- Ongoing responsibilities, recurring or standing duties, and habits ("before every shoot…", "always do X", "going forward we…", "keep doing X").
+- Process or policy changes — a new way of working rather than a one-time action.
+- Vague or open-ended improvements and goals with no checkable end state ("improve the ideation process", "get better at X", broad quarterly aspirations).
+- FYIs, status updates, announcements, social/chatter (greetings, thanks, congratulations, birthdays), other people's tasks not assigned to ${userName}, and pure links or reactions with no action for ${userName}.
+
+Contrast — RELEVANT: "create a framework for 1 script by EOD tomorrow", "get Arturo access to Greenhouse", "add review blocks to the calendar for Thursday's shoot". NOT relevant: "Review and approve all video scripts before Dan shoots" (standing policy, never finished), "improve the ideation process with audience psychographics" (open-ended, no finish line).
 
 For each relevant message, classify its type:
 - "rock": a big quarterly outcome or goal.
